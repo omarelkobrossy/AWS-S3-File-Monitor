@@ -3,15 +3,10 @@ import argparse
 import os
 
 def detect_resource_type(url):
-    res = ""
     if "s3" in url and "amazonaws" in url:
-        res+="S3 Bucket"
+        return "s3"
     elif "sql" in url:
-        res+="SQL Server"
-    if url.endswith(".csv"):
-        res+=" CSV File"
-    elif url.endswith(".txt"):
-        res+=" TXT File"
+        return "sql"
 
     if not res: return "Unknown Resource Type (Invalid URL)"
     res+='\n'

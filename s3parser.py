@@ -4,7 +4,6 @@ import aioboto3
 
 
 s3 = boto3.client('s3')
-pipe_name = r'\\.\pipe\my_pipe'
 
 def traverseS3Objects(url):
     bucket_name = url.split('.s3')[0].replace('https://', '')
@@ -50,15 +49,24 @@ def getS3Data(url, chunk_size):
     return data.read().decode('utf-8')
     
 
-async def monitorS3(url, chunk_size):
-    #Make a new pipe for the monitoring window
-    with open(pipe_name, 'w') as pipe:
-        # Get the first set of Data Chunks as a base for monitoring
-        bucket_name, file_path = traverseS3Objects(url)
+def monitorS3file(url, chunk_size):
+    # Get the first set of Data Chunks as a base for monitoring
+    bucket_name, file_path = traverseS3Objects(url)
+    response = s3.get_object(Bucket=bucket_name, Key=file_path)
+    data = response['Body']
+    data_chunks = []
+    while True:
+        chunk = data.readline().decode('utf-8')
+        if not chunk:
+            break
+        data_chunks.append(chunk)
+        if len(data_chunks) == chunk_size:
+            break
+    prev = "".join(data_chunks)
+    while True:
         response = s3.get_object(Bucket=bucket_name, Key=file_path)
         data = response['Body']
         data_chunks = []
-
         while True:
             chunk = data.readline().decode('utf-8')
             if not chunk:
@@ -66,36 +74,12 @@ async def monitorS3(url, chunk_size):
             data_chunks.append(chunk)
             if len(data_chunks) == chunk_size:
                 break
-        prev = "".join(data_chunks)
+        curr = "".join(data_chunks)
+        if curr != prev:
+            prev_lines = prev.split('\n')
+            curr_lines = curr.split('\n')
+            for line in curr_lines[len(curr_lines)-chunk_size:]:
+                if line not in prev_lines:
+                    print(f"New Entry: {line}")
+            prev = curr
 
-        while True:
-            response = s3.get_object(Bucket=bucket_name, Key=file_path)
-            data = response['Body']
-            data_chunks = []
-
-            while True:
-                chunk = data.readline().decode('utf-8')
-                if not chunk:
-                    break
-                data_chunks.append(chunk)
-                if len(data_chunks) == chunk_size:
-                    break
-            curr = "".join(data_chunks)
-
-            if curr != prev:
-                prev_lines = prev.split('\n')
-                curr_lines = curr.split('\n')
-
-                for line in curr_lines[len(curr_lines)-chunk_size:]:
-                    if line not in prev_lines:
-                        pipe.write(f"New Entry: {line}")
-
-                prev = curr
-
-async def read_from_pipe():
-    with open(pipe_name, 'r') as pipe:
-        while True:
-            line = pipe.readline()
-            if not line:
-                await asyncio.sleep(0.1)
-            print("Received:", line.strip())
