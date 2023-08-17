@@ -14,7 +14,7 @@ def delete_from_csv(s3, bucket, file_key):
     response = s3.get_object(Bucket=bucket, Key=file_key)
     data = response['Body'].read().decode('utf-8')
     rows = len(data.split('\n'))
-    updated_data = "\n".join(data.split('\n')[0:rows-2])
+    updated_data = "\n".join(data.split('\n')[0:rows-1])
     s3.put_object(Bucket=bucket, 
                   Key=file_key,
                   Body=updated_data.encode('utf-8'))
@@ -46,8 +46,8 @@ def run_data_flow(s3, bucket_name, file_key):
     try:
         while True:
             random_data = generate_random_data()
-            append_to_csv(s3, bucket_name, file_key, random_data)
             delete_from_csv(s3, bucket_name, file_key)
+            append_to_csv(s3, bucket_name, file_key, random_data)
             modify_from_csv(s3, bucket_name, file_key)
             print(f"Test Data Added: {random_data}")
             time.sleep(5)
