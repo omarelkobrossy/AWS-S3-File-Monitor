@@ -40,6 +40,7 @@ flowtest = args.flowtest
 
 # If -connect was used
 if connect_link:
+    connect_link = validate_url(connect_link)
     resource_type = detect_resource_type(connect_link)
     print(f"Detected Resource: {resource_type}")
     bucket_name, file_path = s3p.traverseS3Objects(connect_link)
