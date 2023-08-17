@@ -7,6 +7,8 @@ import data_flow_test as dft
 from time import sleep
 import threading
 
+PERMISSIONS = []
+
 #RATE_LIMIT = 3500           --S3 Retrieval Rate Limit
 
 # Create an argument parser
@@ -47,6 +49,7 @@ if connect_link:
     resource_type = detect_resource_type(connect_link)
     print(f"Detected Resource: {resource_type}")
     bucket_name, file_path = s3p.traverseS3Objects(connect_link)
+    s3p.create_iam_role_and_attach_to_bucket(bucket_name)
     if not monitor_flag:                                        #If you connect but you don't want to monitor the data, just retrieve it with a chunk size (optional)
         data = s3p.getS3Data(chunk_size=chunk,
                              bucket_name=bucket_name,

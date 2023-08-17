@@ -1,9 +1,83 @@
 import boto3
 import asyncio
 import aioboto3
-
+import json
 
 s3 = boto3.client('s3')
+iam = boto3.client('iam')
+
+
+def role_exists(role_name):
+    try:
+        iam.get_role(RoleName=role_name)
+        return True
+    except iam.exceptions.NoSuchEntityException:
+        return False
+
+
+def create_iam_role_and_attach_to_bucket(bucket_name):
+    role_name = 'dbMonitor1'
+    role_response = None  # Initialize the role_response variable
+    if not role_exists(role_name):
+        # Create an IAM role with desired permissions
+        trust_policy = {
+            'Version': '2012-10-17',
+            'Statement': [{
+                'Effect': 'Allow',
+                'Principal': {
+                    'Service': 's3.amazonaws.com'
+                },
+                'Action': 'sts:AssumeRole'
+            }]
+        }
+        role_response = iam.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(trust_policy)
+        )
+
+        # Attach an S3 policy to the IAM role
+        s3_policy = {
+            'Version': '2012-10-17',
+            'Statement': [{
+                'Effect': 'Allow',
+                'Action': [
+                    's3:GetObject',
+                    's3:PutObject',
+                    's3:ListBucket'
+                ],
+                'Resource': [
+                    f'arn:aws:s3:::{bucket_name}/*',
+                    f'arn:aws:s3:::{bucket_name}'
+                ]
+            }]
+        }
+        iam.put_role_policy(
+            RoleName=role_name,
+            PolicyName='S3AccessPolicy',
+            PolicyDocument=json.dumps(s3_policy)
+        )
+
+        print(f"IAM role {role_name} created.")
+
+    # Attach the role to the S3 bucket
+    if role_response:
+        bucket_policy = {
+            'Version': '2012-10-17',
+            'Statement': [{
+                'Effect': 'Allow',
+                'Principal': {
+                    'AWS': role_response['Role']['Arn']
+                },
+                'Action': 's3:*',
+                'Resource': f'arn:aws:s3:::{bucket_name}/*'
+            }]
+        }
+        s3.put_bucket_policy(
+            Bucket=bucket_name,
+            Policy=json.dumps(bucket_policy)
+        )
+
+        print(f"IAM role {role_name} attached to {bucket_name} bucket.")
 
 def traverseS3Objects(url):
     bucket_name = url.split('.s3')[0].replace('https://', '')
