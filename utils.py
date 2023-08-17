@@ -4,14 +4,10 @@ import os
 
 def detect_resource_type(url):
     if "s3" in url and "amazonaws" in url:
-        return "s3"
+        return "S3 Bucket"
     elif "sql" in url:
-        return "sql"
-
-    if not res: return "Unknown Resource Type (Invalid URL)"
-    res+='\n'
-    print(f"Detected Resource: {res}")
-    return res
+        return "SQL"
+    return "Unknown Resource Type"
 
 #Custom validation function for paths
 def validate_local_path(path):

@@ -31,6 +31,7 @@ def traverseS3Objects(url):
 
 def getS3Data(url, chunk_size):
     bucket_name, file_path = traverseS3Objects(url)
+    print(f"Bucket: {bucket_name}, File path: {file_path}")
     response = s3.get_object(Bucket=bucket_name, Key=file_path)
     data = response['Body']#.read().decode('utf-8')
     if chunk_size:
@@ -48,37 +49,36 @@ def getS3Data(url, chunk_size):
     #If no chunk size was specified, return the whole data
     return data.read().decode('utf-8')
     
-
-def monitorS3file(url, chunk_size):
-    # Get the first set of Data Chunks as a base for monitoring
-    bucket_name, file_path = traverseS3Objects(url)
-    response = s3.get_object(Bucket=bucket_name, Key=file_path)
-    data = response['Body']
+def read_data_chunks(data, chunk_size):
     data_chunks = []
-    while True:
+    while len(data_chunks) < chunk_size:
         chunk = data.readline().decode('utf-8')
         if not chunk:
             break
         data_chunks.append(chunk)
-        if len(data_chunks) == chunk_size:
-            break
-    prev = "".join(data_chunks)
+    return "".join(data_chunks)
+
+
+def read_whole_data(data):
+    return data.read().decode('utf-8')
+
+
+def monitor_s3_file(s3, url):
+    bucket_name, file_path = traverseS3Objects(url)
+    print(f"Monitoring on path: {bucket_name}, {file_path}")
+
+    response = s3.get_object(Bucket=bucket_name, Key=file_path)
+    data = response['Body']
+    prev = read_whole_data(data)
+
     while True:
         response = s3.get_object(Bucket=bucket_name, Key=file_path)
         data = response['Body']
-        data_chunks = []
-        while True:
-            chunk = data.readline().decode('utf-8')
-            if not chunk:
-                break
-            data_chunks.append(chunk)
-            if len(data_chunks) == chunk_size:
-                break
-        curr = "".join(data_chunks)
+        curr = read_whole_data(data)
         if curr != prev:
             prev_lines = prev.split('\n')
             curr_lines = curr.split('\n')
-            for line in curr_lines[len(curr_lines)-chunk_size:]:
+            for line in curr_lines:
                 if line not in prev_lines:
                     print(f"New Entry: {line}")
             prev = curr
