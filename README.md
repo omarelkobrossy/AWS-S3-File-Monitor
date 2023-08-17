@@ -12,6 +12,27 @@ Begins monitoring every change made on that file (Insertion, Deletion, Modificat
 
 You can add ```-flowtest``` along with ```-monitor``` to feed some random data if you want to test it, and you can modify the test data fed by editing the content of the ``data_flow_test.py`` file
 
+Here is an example of how the program would work:
+```
+  D:\code\projects\DBA>python main.py -connect https://my-aws-bucket-v1.s3.eu-north-1.amazonaws.com/2023/07/17/testCSV -monitor -flowtest -log
+  Detected Resource: S3 Bucket
+  File Paths Display (Choose one of those by number): >>>
+  =======================
+  0: 2023/07/17/testCSV/
+  1: 2023/07/17/testCSV/test_data.csv
+  2: 2023/07/17/testCSV/test_text.txt
+  Path Number: 1
+  Monitoring on path: my-aws-bucket-v1, 2023/07/17/testCSV/test_data.csv
+  Deleted Row 132: DDWKT3KP2S,25,63753,P-25
+  Test Data Added: A2QDEXNL6T,22,72607,P-22
+  New Row 132: A2QDEXNL6T,22,72607,P-22
+  Modified Entry Row - 64: VMBTYCMQYR,18,47028,P-18 ===> 0RAJBUWOWX,35,67268,P-35
+  Deleted Row 132: A2QDEXNL6T,22,72607,P-22
+  Test Data Added: BODJG3FOVX,32,78251,P-32
+  New Row 132: BODJG3FOVX,32,78251,P-32
+  Modified Entry Row - 42: CDJ1DC98JO,34,39386,Employed ===> SWDDTP4HMG,22,56973,P-22
+```
+
 Adding ```-log``` with ```-monitor``` will log any changes made based on the date and hour, for example here's an example of the ```log.json``` file:
 ```
   "2023-08-17": [
@@ -143,4 +164,3 @@ Adding ```-log``` with ```-monitor``` will log any changes made based on the dat
       "post_modification": "VMBTYCMQYR,18,47028,P-18"
     }
   ]
-```
