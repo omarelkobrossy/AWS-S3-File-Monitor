@@ -5,8 +5,6 @@ import os
 def detect_resource_type(url):
     if "s3" in url and "amazonaws" in url:
         return "S3 Bucket"
-    elif "sql" in url:
-        return "SQL"
     return "Unknown Resource Type"
 
 #Custom validation function for paths
