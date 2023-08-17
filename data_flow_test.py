@@ -34,11 +34,11 @@ def modify_from_csv(s3, bucket, file_key):
 
 
 def generate_random_data():
-    name = ''.join(random.choice(
+    param1 = ''.join(random.choice(
         string.ascii_uppercase + string.digits) for _ in range(10))
-    age = random.randint(15, 50)
-    salary = random.randint(30000, 100000)
-    return f'{name},{age},{salary},Employed'
+    param2 = random.randint(15, 50)
+    param3 = random.randint(30000, 100000)
+    return f'{param1},{param2},{param3},P-{param2}'
 
 
 
