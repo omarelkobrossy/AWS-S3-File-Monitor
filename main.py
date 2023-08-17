@@ -4,6 +4,7 @@ from utils import *
 import pandas
 import s3parser as s3p
 import data_flow_test as dft
+from time import sleep
 import threading
 
 #RATE_LIMIT = 3500           --S3 Retrieval Rate Limit
@@ -29,6 +30,7 @@ local_or_URL.add_argument("-local", type=str, help="DB Local file path")
 #Add --chunk argument
 getData_or_Monitor.add_argument("-chunk", type=int, help="Add the chunk size")
 getData_or_Monitor.add_argument("-monitor", action="store_true", help="Monitor the Flow of data")
+parser.add_argument("-flowtest", action="store_true", help="Test Flow of Data into a Test CSV")     #Argument to see whether you want to see tests
 
 # Parse the arguments
 args = parser.parse_args()
@@ -38,29 +40,31 @@ connect_link = args.connect
 local_path = args.local
 chunk = args.chunk
 monitor_flag = args.monitor
+flowtest = args.flowtest
 
 # If -connect was used
 if connect_link:
     resource_type = detect_resource_type(connect_link)
     print(f"Detected Resource: {resource_type}")
-    if not monitor_flag:                                    #If you connect but you don't want to monitor the data, just retrieve it with a chunk size (optional)
-        data = s3p.getS3Data(url=connect_link, 
-                             chunk_size=chunk)
+    bucket_name, file_path = s3p.traverseS3Objects(connect_link)
+    if not monitor_flag:                                        #If you connect but you don't want to monitor the data, just retrieve it with a chunk size (optional)
+        data = s3p.getS3Data(chunk_size=chunk,
+                             bucket_name=bucket_name,
+                             file_path=file_path)
         print(data)
     else:
-        bucket_name, file_path = s3p.traverseS3Objects(connect_link)
-
-        #Data Flow Testing function --- For testing purposes only
-        #data_flow_thread = threading.Thread(
-        #    target=dft.run_data_flow, 
-        #    args=(s3p.s3, bucket_name, file_path))
         #Main Monitoring function
         monitor_s3_thread = threading.Thread(
             target=s3p.monitor_s3_file, 
-            args=(s3p.s3, connect_link))
-
-        # Start the threads
-        #data_flow_thread.start()
+            args=(s3p.s3,
+                bucket_name,
+                file_path))
         monitor_s3_thread.start()
-        #data_flow_thread.join()
+        if flowtest: #Data Flow Testing function --- For testing purposes only
+            data_flow_thread = threading.Thread(
+                target=dft.run_data_flow, 
+                args=(s3p.s3, bucket_name, file_path))
+            # Start the threads
+            data_flow_thread.start()
+            data_flow_thread.join()
         monitor_s3_thread.join()
