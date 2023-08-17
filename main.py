@@ -1,15 +1,9 @@
 #!/usr/bin/env python
 import argparse
 from utils import *
-import pandas
 import s3parser as s3p
 import data_flow_test as dft
-from time import sleep
 import threading
-
-PERMISSIONS = []
-
-#RATE_LIMIT = 3500           --S3 Retrieval Rate Limit
 
 # Create an argument parser
 parser = argparse.ArgumentParser(description="Argument parsing example")
