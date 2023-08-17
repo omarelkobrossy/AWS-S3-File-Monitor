@@ -1,7 +1,7 @@
 import boto3
-import asyncio
-import aioboto3
+import os
 import json
+import datetime
 
 s3 = boto3.client('s3')
 iam = boto3.client('iam')
@@ -135,7 +135,44 @@ def read_whole_data(data):
     return data.read().decode('utf-8')
 
 
-def monitor_s3_file(s3, bucket_name, file_path):
+def log_changes(operation, 
+                modified_row_number=None, 
+                premodified=None,
+                postmodification=None,
+                addition=None,
+                deletion=None
+                ):
+    with open('log.json', 'r') as log:
+        data = json.load(log)
+        formatted_date, formatted_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S").split()
+        res = {
+            "time": formatted_time,
+            "operation": operation
+        }
+        if operation == "MODIFY":
+            res['modified_row_number'] = modified_row_number
+            res['pre_modified'] = premodified
+            res['post_modification'] = postmodification
+        elif operation == "ADD":
+            res['added_row_number'] = modified_row_number
+            res['added_row'] = addition
+        elif operation == "DELETE":
+            res['deleted_row_number'] = modified_row_number
+            res['deleted_row'] = deletion
+
+        if data.get(formatted_date, None):
+            data[formatted_date].append(res)
+        else:
+            data[formatted_date] = [res]
+    with open('log.json', 'w') as log_write:
+        json.dump(data, log_write)
+
+
+def monitor_s3_file(s3, bucket_name, file_path, log):
+    if log:
+        if not os.path.exists("log.json"):              #Check if the log file exists or not, if not then create one
+            with open("log.json", "w") as json_file:
+                json.dump({}, json_file)
     print(f"Monitoring on path: {bucket_name}, {file_path}")
     response = s3.get_object(Bucket=bucket_name, Key=file_path)
     data = response['Body']
@@ -150,16 +187,27 @@ def monitor_s3_file(s3, bucket_name, file_path):
         if rows_curr == rows_prev:                                                              # Change detected in the rows but no addition or deletion
             for i in range(rows_curr):
                 if curr_lines[i] == prev_lines[i]: continue
-                print(f"Modified Entry {i+1}: {prev_lines[i]} ===> {curr_lines[i]}")
+                print(f"Modified Entry Row - {i+1}: {prev_lines[i]} ===> {curr_lines[i]}")
+                if log:
+                    log_changes(operation="MODIFY",
+                                modified_row_number=i+1, 
+                                premodified=prev_lines[i], 
+                                postmodification=curr_lines[i])
         else:
             if rows_curr > rows_prev:
-                for line in curr_lines:
+                for i, line in enumerate(curr_lines):
                     if line not in prev_lines:
-                        print(f"New Entry: {line}")  
+                        print(f"New Row {i+1}: {line}")
+                        if log:  
+                            log_changes(operation="ADD",
+                                        modified_row_number=i+1,
+                                        addition=line)
             else:
-                for line in prev_lines:
+                for i, line in enumerate(prev_lines):
                     if line not in curr_lines:
-                        print(f"Deleted Entry: {line}")
+                        print(f"Deleted Row {i+1}: {line}")
+                        if log:
+                            log_changes(operation="DELETE",
+                                        modified_row_number=i+1,
+                                        deletion=line)
         prev = curr
-
-

@@ -25,7 +25,7 @@ def modify_from_csv(s3, bucket, file_key):
     data = response['Body'].read().decode('utf-8')
     data_list = data.split('\n')
     rows = len(data_list)
-    random_row_modify = random.randint(0, rows)
+    random_row_modify = random.randint(0, rows-1)
     data_list[random_row_modify] = generate_random_data()
     updated_data = "\n".join(data_list)
     s3.put_object(Bucket=bucket,
@@ -48,8 +48,8 @@ def run_data_flow(s3, bucket_name, file_key):
             random_data = generate_random_data()
             delete_from_csv(s3, bucket_name, file_key)
             append_to_csv(s3, bucket_name, file_key, random_data)
-            modify_from_csv(s3, bucket_name, file_key)
             print(f"Test Data Added: {random_data}")
+            modify_from_csv(s3, bucket_name, file_key)
             time.sleep(5)
     except KeyboardInterrupt:
         print("Data generation stopped.")
