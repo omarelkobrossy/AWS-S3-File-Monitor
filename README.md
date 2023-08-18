@@ -2,7 +2,7 @@
 
 ## Usage
 ```python main.py -connect s3_link```
-Retrieves the whole data from that file
+Retrieves the whole data from the file
 
 ```python main.py -connect s3_link -chunk 5```
 Retrieves the first 5 rows of the data from that file
