@@ -47,8 +47,10 @@ def run_data_flow(s3, bucket_name, file_key):
         while True:
             random_data = generate_random_data()
             delete_from_csv(s3, bucket_name, file_key)
+            time.sleep(5)
             append_to_csv(s3, bucket_name, file_key, random_data)
             print(f"Test Data Added: {random_data}")
+            time.sleep(5)
             modify_from_csv(s3, bucket_name, file_key)
             time.sleep(5)
     except KeyboardInterrupt:

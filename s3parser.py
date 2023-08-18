@@ -2,6 +2,7 @@ import boto3
 import os
 import json
 import datetime
+from time import sleep
 
 s3 = boto3.client('s3')
 iam = boto3.client('iam')
@@ -168,7 +169,7 @@ def log_changes(operation,
         json.dump(data, log_write)
 
 
-def monitor_s3_file(s3, bucket_name, file_path, log):
+def monitor_s3_file(s3, bucket_name, file_path, log, delay=1):
     if log:
         if not os.path.exists("log.json"):              #Check if the log file exists or not, if not then create one
             with open("log.json", "w") as json_file:
@@ -188,26 +189,27 @@ def monitor_s3_file(s3, bucket_name, file_path, log):
             for i in range(rows_curr):
                 if curr_lines[i] == prev_lines[i]: continue
                 print(f"Modified Entry Row - {i+1}: {prev_lines[i]} ===> {curr_lines[i]}")
-                if log:
-                    log_changes(operation="MODIFY",
-                                modified_row_number=i+1, 
-                                premodified=prev_lines[i], 
-                                postmodification=curr_lines[i])
+                if not log: continue
+                log_changes(operation="MODIFY",
+                            modified_row_number=i+1, 
+                            premodified=prev_lines[i], 
+                            postmodification=curr_lines[i])
         else:
             if rows_curr > rows_prev:
                 for i, line in enumerate(curr_lines):
                     if line not in prev_lines:
                         print(f"New Row {i+1}: {line}")
-                        if log:  
-                            log_changes(operation="ADD",
-                                        modified_row_number=i+1,
-                                        addition=line)
+                        if not log: continue  
+                        log_changes(operation="ADD",
+                                    modified_row_number=i+1,
+                                    addition=line)
             else:
                 for i, line in enumerate(prev_lines):
                     if line not in curr_lines:
                         print(f"Deleted Row {i+1}: {line}")
-                        if log:
-                            log_changes(operation="DELETE",
-                                        modified_row_number=i+1,
-                                        deletion=line)
+                        if not log: continue
+                        log_changes(operation="DELETE",
+                                    modified_row_number=i+1,
+                                    deletion=line)
         prev = curr
+        sleep(delay) # Delay to not use up alot of S3 Requests

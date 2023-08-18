@@ -9,6 +9,7 @@ import threading
 parser = argparse.ArgumentParser(description="Argument parsing example")
 getData_or_Monitor = parser.add_mutually_exclusive_group(required=False)
 monitor_group = parser.add_mutually_exclusive_group()
+delay_group = parser.add_mutually_exclusive_group()
 # root_traverse_group = parser.add_mutually_exclusive_group(required=True)
 
 # Add --connect argument
@@ -17,9 +18,10 @@ parser.add_argument("-connect", type=validate_url, help="DB Link to connect to")
 #Add --chunk argument
 getData_or_Monitor.add_argument("-chunk", type=int, help="Add the chunk size")
 getData_or_Monitor.add_argument("-monitor", action="store_true", help="Monitor the Flow of data")
-parser.add_argument("-flowtest", action="store_true", help="Test Flow of Data into a Test CSV")     #Argument to see whether you want to see tests
+parser.add_argument("-flowtest", action="store_true", help="Test Flow of Data into a Test CSV")     #Argument to see whether you want to see tests of data flow
 
 monitor_group.add_argument("-log", action="store_true", help="Enable logging while monitoring")
+delay_group.add_argument("-delay", type=int, help="Delay in seconds on each monitor request")
 
 # Parse the arguments
 args = parser.parse_args()
@@ -30,6 +32,7 @@ chunk = args.chunk
 monitor_flag = args.monitor
 flowtest = args.flowtest
 log_flag = args.log
+delay = args.delay
 
 # If -connect was used
 if connect_link:
@@ -50,7 +53,8 @@ if connect_link:
             args=(s3p.s3,
                 bucket_name,
                 file_path,
-                log_flag))
+                log_flag,
+                delay))
         monitor_s3_thread.start()
         if flowtest: #Data Flow Testing function --- For testing purposes only
             data_flow_thread = threading.Thread(
