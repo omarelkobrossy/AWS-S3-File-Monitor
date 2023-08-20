@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
+
 import argparse
 from utils import *
 import s3parser as s3p

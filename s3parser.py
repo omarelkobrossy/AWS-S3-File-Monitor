@@ -1,12 +1,37 @@
 import boto3
+from botocore.exceptions import NoCredentialsError
 import os
 import json
+import subprocess as subp
 import datetime
 from time import sleep
 
-s3 = boto3.client('s3')
-iam = boto3.client('iam')
 
+def verify_aws_start_s3():
+    s3 = boto3.client('s3')
+    #Verify the AWS Credentials
+    credentials = boto3.Session().get_credentials()
+    sts_client = boto3.client(
+        'sts',
+        aws_access_key_id=credentials.access_key,
+        aws_secret_access_key=credentials.secret_key
+    )
+    try:
+        response = sts_client.get_caller_identity()
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=credentials.access_key,
+            aws_secret_access_key=credentials.secret_key
+        )
+        return s3
+    except:
+        print("AWS Credentials not detected or invalid Access Key and/or Secret Key, Enter valid AWS Credentials")
+        subp.run(["aws", "configure"])
+        print("Credentials configured, Re-run the program")
+        quit()
+
+s3 = verify_aws_start_s3()
+iam = boto3.client('iam')
 
 def role_exists(role_name):
     try:
@@ -83,9 +108,10 @@ def create_iam_role_and_attach_to_bucket(bucket_name):
 def traverseS3Objects(url):
     bucket_name = url.split('.s3')[0].replace('https://', '')
     object_key = url.split('.com/')[1]
-
     response = s3.list_objects_v2(
-        Bucket=bucket_name, Prefix=object_key)
+        Bucket=bucket_name, 
+        Prefix=object_key
+    )
     paths = response['Contents']
     while len(paths) > 1:
         print("File Paths Display (Choose one of those by number): >>>\n=======================")
